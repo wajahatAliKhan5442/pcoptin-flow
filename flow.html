@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Automation Workflow</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #f1f5f9; font-family: 'Segoe UI', Inter, Arial, sans-serif; padding: 32px 24px; }
+  h1 { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 28px; letter-spacing: -0.3px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .full { grid-column: 1 / -1; }
+
+  .section { background: white; border-radius: 14px; padding: 24px 20px 28px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; margin-bottom: 20px; padding: 6px 12px; border-radius: 6px; display: inline-block; }
+
+  /* flow atoms */
+  .flow { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .node {
+    width: 100%; max-width: 280px; padding: 10px 14px;
+    border-radius: 9px; text-align: center;
+    font-size: 13px; font-weight: 600; line-height: 1.3;
+    border: 1.8px solid;
+  }
+  .node.trigger { background: #dbeafe; border-color: #3b82f6; color: #1d4ed8; }
+  .node.action  { background: #fff; border-color: #cbd5e1; color: #334155; }
+  .node.wa      { background: #f0fdf4; border-color: #22c55e; color: #15803d; }
+  .node.email   { background: #fffbeb; border-color: #f59e0b; color: #92400e; }
+  .node.reply   { background: #f5f3ff; border-color: #8b5cf6; color: #5b21b6; }
+  .node.start-wa{ background: #d1fae5; border-color: #16a34a; color: #065f46; font-size:14px; }
+  .node.start-em{ background: #fef3c7; border-color: #d97706; color: #92400e; font-size:14px; }
+  .node.start-re{ background: #ede9fe; border-color: #7c3aed; color: #4c1d95; font-size:14px; }
+  .node.end-node{ background: #7c3aed; border-color: #7c3aed; color: white; border-radius: 20px; }
+  .node.remove  { background: #fee2e2; border-color: #ef4444; color: #991b1b; font-size:12px; }
+
+  .wait {
+    width: 100%; max-width: 200px; padding: 6px 12px;
+    border-radius: 20px; text-align: center;
+    font-size: 12px; color: #475569; border: 1.4px solid #e2e8f0;
+    background: #f8fafc;
+  }
+
+  .arrow { width: 2px; height: 22px; background: #94a3b8; margin: 0 auto; position: relative; }
+  .arrow::after { content:''; position:absolute; bottom:-5px; left:-4px; border-left:5px solid transparent; border-right:5px solid transparent; border-top:7px solid #94a3b8; }
+  .arrow.green { background:#16a34a; } .arrow.green::after { border-top-color:#16a34a; }
+  .arrow.amber { background:#d97706; } .arrow.amber::after { border-top-color:#d97706; }
+  .arrow.purple{ background:#7c3aed; } .arrow.purple::after { border-top-color:#7c3aed; }
+
+  /* split for section 1 */
+  .split { display: flex; justify-content: center; gap: 0; align-items: flex-start; margin-top: 0; }
+  .split-line-wrap { display:flex; flex-direction:column; align-items:center; }
+  .h-line { height: 2px; background: #94a3b8; }
+  .split-col { display:flex; flex-direction:column; align-items:center; }
+
+  /* diamond */
+  .diamond-wrap { display:flex; align-items:center; justify-content:center; position:relative; width:100%; max-width:320px; margin: 0 auto; }
+  .diamond { width:80px; height:80px; transform:rotate(45deg); background:#fefce8; border:2px solid #ca8a04; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .diamond-text { transform:rotate(-45deg); font-size:11px; font-weight:700; color:#713f12; text-align:center; line-height:1.2; width:70px; }
+
+  .branch { display:flex; width:100%; max-width:320px; gap:16px; justify-content:center; margin:0 auto; }
+  .branch-col { display:flex; flex-direction:column; align-items:center; flex:1; }
+  .yes-label { font-size:11px; font-weight:700; color:#16a34a; margin-bottom:4px; }
+  .no-label  { font-size:11px; font-weight:700; color:#dc2626; margin-bottom:4px; }
+
+  /* email compact list */
+  .email-steps { display:flex; flex-direction:column; align-items:center; gap:0; width:100%; max-width:280px; margin:0 auto; }
+  .email-step-pair { display:flex; align-items:center; gap:8px; width:100%; justify-content:center; margin:2px 0; }
+
+  .badge { display:inline-block; background:#f59e0b; color:white; font-size:10px; font-weight:700; border-radius:4px; padding:1px 6px; }
+
+  @media print {
+    body { padding: 16px; background: white; }
+    .section { box-shadow: none; border: 1px solid #e2e8f0; }
+  }
+</style>
+</head>
+<body>
+
+<h1>📋 Automation Workflow Overview</h1>
+
+<div class="grid">
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- SECTION 1 – full width               -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section full">
+    <span class="section-title" style="background:#1e293b;color:white;">1 · Contact Entry Point</span>
+
+    <div class="flow">
+      <div class="node trigger">Opt-In Form Submitted</div>
+      <div class="arrow"></div>
+      <div class="node action">Create / Update Opportunity<br><span style="font-weight:400;font-size:12px;color:#64748b">(New Lead)</span></div>
+      <div class="arrow"></div>
+      <div class="node action">Create Spreadsheet Row</div>
+      <div class="arrow"></div>
+      <div class="node action">Internal Team Notification</div>
+      <div class="arrow" style="height:14px"></div>
+    </div>
+
+    <!-- Split -->
+    <div style="display:flex;align-items:flex-start;justify-content:center;gap:0;width:100%">
+      <div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:340px">
+        <div style="width:2px;height:14px;background:#94a3b8;margin:0 auto"></div>
+        <div style="height:2px;width:100%;background:#94a3b8"></div>
+        <div style="width:2px;height:14px;background:#94a3b8;margin:0 auto"></div>
+        <div style="display:flex;width:100%;gap:16px;justify-content:space-around">
+          <div class="node start-em" style="flex:1">✉️ Start Email Sequence<br><span style="font-size:11px;font-weight:400">→ see Section 4</span></div>
+          <div class="node start-wa" style="flex:1">💬 Start WhatsApp Sequence<br><span style="font-size:11px;font-weight:400">→ see Section 2</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- SECTION 2 – WhatsApp                  -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section">
+    <span class="section-title" style="background:#065f46;color:white;">2 · WhatsApp Follow-Up Flow</span>
+
+    <div class="flow">
+      <div class="node start-wa">💬 Start WhatsApp Sequence</div>
+      <div class="arrow green"></div>
+      <div class="wait">⏱ Wait 10 Minutes</div>
+      <div class="arrow green"></div>
+      <div class="node wa">Send WhatsApp Message #1</div>
+      <div class="arrow green"></div>
+      <div class="node wa">Add Tag: "wa wait reply"</div>
+      <div class="arrow green"></div>
+      <div class="wait">⏱ Wait 1 Day</div>
+      <div class="arrow green"></div>
+    </div>
+
+    <!-- Diamond 1 -->
+    <div style="display:flex;align-items:center;justify-content:center;width:100%;max-width:280px;margin:0 auto 0">
+      <div class="diamond">
+        <div class="diamond-text">Still tagged "wa wait reply"?</div>
+      </div>
+    </div>
+
+    <div class="branch" style="margin-top:8px">
+      <div class="branch-col">
+        <div class="yes-label">YES ↓</div>
+        <div class="node wa" style="font-size:12px">Send Follow-Up Message #2</div>
+        <div class="arrow green"></div>
+        <div class="wait" style="font-size:11px">⏱ Wait 1 Day</div>
+        <div class="arrow green"></div>
+        <!-- Diamond 2 (compact) -->
+        <div style="background:#fefce8;border:1.8px solid #ca8a04;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:700;color:#713f12;text-align:center;width:100%">Still tagged<br>"wa wait reply"?</div>
+        <div style="display:flex;width:100%;gap:8px;margin-top:8px">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+            <div class="yes-label">YES ↓</div>
+            <div class="node wa" style="font-size:11px;padding:8px">Send Next Follow-Up</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+            <div class="no-label">NO ↓</div>
+            <div class="node remove" style="padding:8px">Remove From Workflow</div>
+          </div>
+        </div>
+      </div>
+      <div class="branch-col">
+        <div class="no-label">NO ↓</div>
+        <div class="node remove">Remove From Workflow</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- SECTION 3 – Reply Handling            -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section">
+    <span class="section-title" style="background:#7c3aed;color:white;">3 · Reply Handling Flow</span>
+
+    <div class="flow">
+      <div class="node start-re">💬 Customer Replies to WhatsApp</div>
+      <div class="arrow purple"></div>
+      <div class="node reply">Remove Tag: "wa wait reply"</div>
+      <div class="arrow purple"></div>
+      <div class="wait">⏱ Wait 10 Minutes</div>
+      <div class="arrow purple"></div>
+      <div class="node reply">Send Reply Follow-Up Message</div>
+      <div class="arrow purple"></div>
+      <div class="node end-node" style="max-width:120px">End</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- SECTION 4 – Email Nurture – full      -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section full">
+    <span class="section-title" style="background:#92400e;color:white;">4 · Email Nurture Sequence</span>
+
+    <div style="display:flex;gap:0;align-items:flex-start;flex-wrap:wrap;justify-content:center">
+
+      <!-- Timeline strip -->
+      <div style="display:flex;flex-wrap:wrap;gap:0;align-items:center;justify-content:center;width:100%">
+
+        <!-- Step 1 -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex:0 0 auto">
+          <div class="node start-em" style="width:180px">✉️ Start Email Sequence</div>
+          <div class="arrow amber"></div>
+          <div class="wait">⏱ Wait 10 Min</div>
+          <div class="arrow amber"></div>
+          <div class="node email" style="width:180px">Send Email #1</div>
+        </div>
+
+        <div style="height:2px;width:32px;background:#d97706;margin-top:-2px;flex-shrink:0"></div>
+
+        <!-- Step 2 -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex:0 0 auto">
+          <div class="wait">⏱ Wait 1 Day</div>
+          <div class="arrow amber"></div>
+          <div class="node email" style="width:160px">Send Email #2</div>
+          <div class="arrow amber"></div>
+          <div class="wait">⏱ Wait 1 Day</div>
+        </div>
+
+        <div style="height:2px;width:32px;background:#d97706;margin-top:30px;flex-shrink:0"></div>
+
+        <!-- Step 3 -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex:0 0 auto">
+          <div class="node email" style="width:160px">Send Email #3</div>
+          <div class="arrow amber"></div>
+          <div class="wait">⏱ Wait 3 Days</div>
+          <div class="arrow amber"></div>
+          <div class="node email" style="width:160px">Send Email #4</div>
+        </div>
+
+        <div style="height:2px;width:32px;background:#d97706;margin-top:-2px;flex-shrink:0"></div>
+
+        <!-- Step 4 -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex:0 0 auto">
+          <div class="wait">⏱ Wait 3 Days</div>
+          <div class="arrow amber"></div>
+          <div class="node email" style="width:160px">Send Email #5</div>
+          <div class="arrow amber"></div>
+          <div class="wait">⏱ Wait 7 Days</div>
+          <div class="arrow amber"></div>
+          <div class="node email" style="width:160px;background:#fde68a;border-color:#b45309;color:#78350f">Send Final Email</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div><!-- /grid -->
+
+</body>
+</html>
